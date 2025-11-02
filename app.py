@@ -1,44 +1,17 @@
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, AudioProcessorBase
-from deep_translator import GoogleTranslator
-import edge_tts
-import asyncio
-import tempfile
+import av
 
-# 🎧 Spreek vertaling uit
-async def spreek_tekst(tekst, taalcode):
-    stemmap = {
-        "nl": "nl-NL-MaartenNeural",
-        "fr": "fr-FR-DeniseNeural",
-        "pt": "pt-BR-AntonioNeural",
-        "zh-CN": "zh-CN-XiaoxiaoNeural",
-        "es": "es-ES-AlvaroNeural",
-        "de": "de-DE-ConradNeural",
-        "en-US": "en-US-AriaNeural",
-        "ln": "pt-BR-AntonioNeural",
-    }
-    stem = stemmap.get(taalcode, "en-US-AriaNeural")
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmpfile:
-        await edge_tts.Communicate(tekst, stem).save(tmpfile.name)
-        return tmpfile.name
-
-# 🧠 Audioverwerker
+# 🧠 Dummy audioverwerker (nodig om webrtc te laten werken)
 class AudioProcessor(AudioProcessorBase):
-    def __init__(self):
-        self.recognizer = None
-        self.bron_taal = None
-        self.doel_taal = None
-
-    def recv(self, frame):
+    def recv(self, frame: av.AudioFrame) -> av.AudioFrame:
+        # Hier kun je later spraakherkenning toevoegen
         return frame
 
 # 🚀 Streamlit interface
 st.title("🌍 Live Spraakvertaler voor de Prediking")
 
-bron_taal = st.selectbox("Welke taal spreekt de pastoor?", ["fr", "pt", "nl", "zh-CN", "en-US", "es", "de"])
-doel_taal = st.selectbox("Welke taal wil je horen?", ["nl", "fr", "pt", "zh-CN", "ln", "en-US", "es", "de"])
-
-st.markdown("🎙️ Klik hieronder om live te spreken:")
+st.markdown("🎙️ Klik hieronder om live te spreken via je microfoon:")
 
 webrtc_ctx = webrtc_streamer(
     key="live-vertaler",
@@ -47,6 +20,7 @@ webrtc_ctx = webrtc_streamer(
     async_processing=True,
 )
 
-st.markdown("⚠️ Live vertaling wordt binnenkort toegevoegd. Deze versie toont dat microfoon werkt en audio wordt verwerkt.")
-
-# 🔜 Volgende stap: spraakherkenning integreren zodra microfoon werkt
+if webrtc_ctx.audio_receiver:
+    st.success("✅ Microfoon werkt! Je spreekt live.")
+else:
+    st.info("ℹ️ Wacht op microfoonverbinding...")
