@@ -4,7 +4,7 @@ from deep_translator import GoogleTranslator
 import edge_tts
 import asyncio
 import tempfile
-import platform
+import av
 
 # 🌍 Taalinstellingen
 bron_taal = st.selectbox("Welke taal spreek je?", ["fr", "pt", "nl", "zh-CN", "ln", "en", "es", "de"])
@@ -27,10 +27,10 @@ async def spreek_tekst(tekst, taalcode):
         await edge_tts.Communicate(tekst, stem).save(tmpfile.name)
         return tmpfile.name
 
-# 🧠 Audioverwerker voor gsm (lichte simulatie)
-class LightAudioProcessor(AudioProcessorBase):
-    def recv(self, frame):
-        zin = "Bonjour tout le monde"  # Simulatie of vervang met API-herkenning
+# 🧠 Audioverwerker (simuleert zin, vervang later met echte herkenning via API)
+class AudioProcessor(AudioProcessorBase):
+    def recv(self, frame: av.AudioFrame) -> av.AudioFrame:
+        zin = "Bonjour tout le monde"  # ← vervang dit later met echte herkenning
         st.write(f"🗣️ Origineel: {zin}")
         vertaling = GoogleTranslator(source=bron_taal, target=doel_taal).translate(zin)
         st.write(f"🌐 Vertaling: {vertaling}")
@@ -39,57 +39,13 @@ class LightAudioProcessor(AudioProcessorBase):
             st.audio(af.read(), format="audio/mp3")
         return frame
 
-# 🧠 Audioverwerker voor pc (Whisper)
-class WhisperAudioProcessor(AudioProcessorBase):
-    def __init__(self):
-        import whisper
-        self.model = whisper.load_model("base")
-        self.buffer = b""
-
-    def recv(self, frame):
-        audio = frame.to_ndarray()
-        self.buffer += audio.tobytes()
-
-        if len(self.buffer) > 16000 * 5:
-            import numpy as np
-            import soundfile as sf
-            import io
-
-            audio_array = np.frombuffer(self.buffer, dtype=np.int16).astype(np.float32) / 32768.0
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-                sf.write(tmp.name, audio_array, 16000)
-                result = self.model.transcribe(tmp.name, language=bron_taal)
-                zin = result["text"]
-                st.write(f"🗣️ Origineel: {zin}")
-                vertaling = GoogleTranslator(source=bron_taal, target=doel_taal).translate(zin)
-                st.write(f"🌐 Vertaling: {vertaling}")
-                audiobestand = asyncio.run(spreek_tekst(vertaling, doel_taal))
-                with open(audiobestand, "rb") as af:
-                    st.audio(af.read(), format="audio/mp3")
-            self.buffer = b""
-        return frame
-
 # 🚀 Streamlit interface
-st.title("🌍 Hybride Live Spraakvertaler")
-st.markdown("🎙️ Spreek live via je microfoon. De app kiest automatisch tussen lichte of krachtige herkenning.")
+st.title("🌍 Live Spraakvertaler voor Telefoon en PC")
+st.markdown("🎙️ Spreek live via je microfoon. Vertaling verschijnt automatisch en wordt uitgesproken.")
 
-# 🔍 Detectie: pc of gsm
-is_pc = platform.system() in ["Windows", "Darwin", "Linux"]
-
-if is_pc:
-    st.success("🖥️ PC gedetecteerd: Whisper wordt gebruikt voor herkenning.")
-    webrtc_streamer(
-        key="pc-stream",
-        audio_processor_factory=WhisperAudioProcessor,
-        media_stream_constraints={"audio": True, "video": False},
-        async_processing=True,
-    )
-else:
-    st.info("📱 Mobiel apparaat gedetecteerd: lichte herkenning wordt gebruikt.")
-    webrtc_streamer(
-        key="gsm-stream",
-        audio_processor_factory=LightAudioProcessor,
-        media_stream_constraints={"audio": True, "video": False},
-        async_processing=True,
-    )
-
+webrtc_streamer(
+    key="live-stream",
+    audio_processor_factory=AudioProcessor,
+    media_stream_constraints={"audio": True, "video": False},
+    async_processing=True,
+)
