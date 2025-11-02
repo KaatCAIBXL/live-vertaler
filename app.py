@@ -117,8 +117,8 @@ st.title("🌍 Live Spraakvertaler voor de Prediking")
 
 st.markdown("Gebruik een headset of richtmicrofoon voor de beste kwaliteit.")
 
-bron_taal = st.selectbox("Welke taal spreekt de pastoor?", ["fr", "pt", "nl", "zh-CN", "ln"])
-doel_taal = st.selectbox("Welke taal wil je horen?", ["nl", "fr", "pt", "zh-CN", "ln", "en-US"])
+bron_taal = st.selectbox("Welke taal spreekt de pastoor?", ["fr", "pt", "nl", "zh-CN", "ln","en-US","es","de"])
+doel_taal = st.selectbox("Welke taal wil je horen?", ["nl", "fr", "pt", "zh-CN", "ln", "en-US","es","de"])
 medium = st.radio("Hoe volg je de prediking?", ["Zaal", "Zoom"])
 
 if st.button("🎧 Start live vertaling"):
