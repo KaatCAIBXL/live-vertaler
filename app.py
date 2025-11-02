@@ -5,7 +5,7 @@ import edge_tts
 import asyncio
 import tempfile
 import av
-import whisper
+import openai_whisper as whisper
 
 # 🌍 Taalinstellingen
 bron_taal = st.selectbox("Welke taal spreekt de pastoor?", ["fr", "pt", "nl", "zh", "en", "es", "de"])
