@@ -7,7 +7,7 @@ import tempfile
 import av
 
 # 🌍 Taalinstellingen
-bron_taal = st.selectbox("Welke taal spreek je?", ["fr", "pt", "nl", "zh-CN", "ln", "en", "es", "de"])
+bron_taal = st.selectbox("Welke taal spreek je?", ["fr", "pt", "nl", "zh-CN", "en", "es", "de"])
 doel_taal = st.selectbox("Welke taal wil je horen?", ["nl", "fr", "pt", "zh-CN", "ln", "en", "es", "de"])
 
 # 🎧 Tekst uitspreken
