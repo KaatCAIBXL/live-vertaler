@@ -3,13 +3,11 @@ from deep_translator import GoogleTranslator
 import speech_recognition as sr
 import edge_tts
 import asyncio
-import pygame
-import os
+import tempfile
 from datetime import datetime
-import threading
 
 # --------------------------
-# 🎧 Functie om tekst uit te spreken
+# 🎧 Tekst uitspreken via browser
 # --------------------------
 
 async def spreek_tekst(tekst, taalcode):
@@ -25,89 +23,55 @@ async def spreek_tekst(tekst, taalcode):
     }
 
     stem = stemmap.get(taalcode, "en-US-AriaNeural")
-    mp3_bestand = "tts_edge.mp3"
-    communicate = edge_tts.Communicate(tekst, stem)
-    await communicate.save(mp3_bestand)
-
-    pygame.mixer.init()
-    pygame.mixer.music.load(mp3_bestand)
-    pygame.mixer.music.play()
-    while pygame.mixer.music.get_busy():
-        pygame.time.Clock().tick(10)
-    pygame.mixer.quit()
-    os.remove(mp3_bestand)
-
-# --------------------------
-# 🔍 Hulpfunctie: vind juiste CABLE Input
-# --------------------------
-
-def vind_cable_input_index():
-    apparaten = sr.Microphone.list_microphone_names()
-    cable_indices = [i for i, naam in enumerate(apparaten) if "CABLE Input" in naam]
-    return cable_indices[0] if cable_indices else None
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmpfile:
+        await edge_tts.Communicate(tekst, stem).save(tmpfile.name)
+        return tmpfile.name
 
 # --------------------------
 # 🧠 Hoofdprogramma
 # --------------------------
 
-def start_luisteren(bron_taal, doel_taal, medium):
+def start_luisteren(bron_taal, doel_taal):
     recognizer = sr.Recognizer()
-    recognizer.dynamic_energy_threshold = True
-    stop_gewenst = False
+    mic = sr.Microphone()
 
-    def wacht_op_enter():
-        nonlocal stop_gewenst
-        input("🔚 Druk op Enter om te stoppen...\n")
-        stop_gewenst = True
+    st.info("🎙️ Begin met spreken. Klik op 'Stop' om te eindigen.")
+    resultaten = []
 
-    threading.Thread(target=wacht_op_enter, daemon=True).start()
+    with mic as source:
+        recognizer.adjust_for_ambient_noise(source)
+        for _ in range(5):  # Luister 5 zinnen (of pas dit aan)
+            st.write("⏳ Luisteren...")
+            try:
+                audio = recognizer.listen(source, phrase_time_limit=10)
+                zin = recognizer.recognize_google(audio, language=bron_taal).strip()
+                st.write(f"🗣️ Origineel ({bron_taal}): {zin}")
 
-    try:
-        if medium == "Zoom":
-            indexmic = vind_cable_input_index()
-            mic = sr.Microphone(device_index=indexmic if indexmic is not None else None)
-        else:
-            mic = sr.Microphone()
-    except Exception as e:
-        st.error(f"❌ Fout bij kiezen van microfoon: {e}")
-        return
+                try:
+                    vertaling = GoogleTranslator(source=bron_taal, target=doel_taal).translate(zin)
+                except Exception as e:
+                    st.warning(f"⚠️ Vertaling mislukt: {e}")
+                    vertaling = zin
 
-    st.info("🎙️ Begin met spreken. Druk op Enter in de terminal om te stoppen.")
+                st.write(f"🌐 Vertaling ({doel_taal}): {vertaling}")
 
-    try:
-        with mic as source:
-            recognizer.adjust_for_ambient_noise(source)
-            with open("vertaling_resultaat.txt", "w", encoding="utf-8") as bestand:
-                while not stop_gewenst:
-                    st.write("⏳ Luisteren naar zin...")
-                    try:
-                        audio = recognizer.listen(source, phrase_time_limit=10)
-                        zin = recognizer.recognize_google(audio, language=bron_taal).strip()
+                audiobestand = asyncio.run(spreek_tekst(vertaling, doel_taal))
+                with open(audiobestand, "rb") as f:
+                    st.audio(f.read(), format="audio/mp3")
 
-                        st.write(f"🗣️ Origineel ({bron_taal}): {zin}")
-                        try:
-                            vertaling = GoogleTranslator(source=bron_taal, target=doel_taal).translate(zin)
-                        except Exception as e:
-                            st.warning(f"⚠️ Vertaling mislukt: {e}")
-                            vertaling = zin
+                tijd = datetime.now().strftime("%H:%M:%S")
+                resultaten.append(f"[{tijd}] Origineel: {zin}\n[{tijd}] Vertaling: {vertaling}\n")
 
-                        st.write(f"🌐 Vertaling ({doel_taal}): {vertaling}")
-                        asyncio.run(spreek_tekst(vertaling, doel_taal))
+            except sr.UnknownValueError:
+                st.warning("⚠️ Niet verstaan. Probeer opnieuw.")
+            except sr.RequestError as e:
+                st.error(f"❌ Fout bij spraakherkenning: {e}")
+                break
 
-                        tijd = datetime.now().strftime("%H:%M:%S")
-                        bestand.write(f"[{tijd}] Origineel ({bron_taal}): {zin}\n")
-                        bestand.write(f"[{tijd}] Vertaling ({doel_taal}): {vertaling}\n\n")
-
-                    except sr.UnknownValueError:
-                        st.warning("⚠️ Kon zin niet herkennen. Probeer opnieuw.")
-                    except sr.RequestError as e:
-                        st.error(f"⚠️ Fout bij spraakherkenning: {e}")
-                        break
-
-        st.success("🛑 Vertaling beëindigd. Bestand opgeslagen als 'vertaling_resultaat.txt'.")
-
-    except Exception as e:
-        st.error(f"❌ Fout bij openen van microfoon: {e}")
+    if resultaten:
+        with open("vertaling_resultaat.txt", "w", encoding="utf-8") as bestand:
+            bestand.writelines(resultaten)
+        st.success("✅ Vertaling voltooid. Resultaat opgeslagen.")
 
 # --------------------------
 # 🚀 Streamlit Interface
@@ -115,12 +79,8 @@ def start_luisteren(bron_taal, doel_taal, medium):
 
 st.title("🌍 Live Spraakvertaler voor de Prediking")
 
-st.markdown("Gebruik een headset of richtmicrofoon voor de beste kwaliteit.")
-
-bron_taal = st.selectbox("Welke taal spreekt de pastoor?", ["fr", "pt", "nl", "zh-CN", "ln","en-US","es","de"])
-doel_taal = st.selectbox("Welke taal wil je horen?", ["nl", "fr", "pt", "zh-CN", "ln", "en-US","es","de"])
-medium = st.radio("Hoe volg je de prediking?", ["Zaal", "Zoom"])
+bron_taal = st.selectbox("Welke taal spreekt de pastoor?", ["fr", "pt", "nl", "zh-CN", "en-US", "es", "de"])
+doel_taal = st.selectbox("Welke taal wil je horen?", ["nl", "fr", "pt", "zh-CN", "ln", "en-US", "es", "de"])
 
 if st.button("🎧 Start live vertaling"):
-    start_luisteren(bron_taal, doel_taal, medium)
-
+    start_luisteren(bron_taal, doel_taal)
