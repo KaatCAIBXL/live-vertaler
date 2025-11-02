@@ -8,7 +8,7 @@ import speech_recognition as sr
 st.title("🌍 Spraakvertaler voor Telefoon en PC")
 st.markdown("🎙️ Neem een korte boodschap op, vertaal en beluister het resultaat.")
 
-bron_taal = st.selectbox("Welke taal spreek je?", ["fr", "pt", "nl", "zh-CN", "ln", "en-US", "es", "de"])
+bron_taal = st.selectbox("Welke taal spreek je?", ["fr", "pt", "nl", "zh-CN", "en-US", "es", "de"])
 doel_taal = st.selectbox("Welke taal wil je horen?", ["nl", "fr", "pt", "zh-CN", "ln", "en-US", "es", "de"])
 
 audio_file = st.file_uploader("📎 Neem een audiofragment op (MP3 of WAV)", type=["mp3", "wav"])
