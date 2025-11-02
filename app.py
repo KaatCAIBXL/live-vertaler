@@ -35,7 +35,7 @@ class AudioProcessor(AudioProcessorBase):
 # 🚀 Streamlit interface
 st.title("🌍 Live Spraakvertaler voor de Prediking")
 
-bron_taal = st.selectbox("Welke taal spreekt de pastoor?", ["fr", "pt", "nl", "zh-CN", "ln", "en-US", "es", "de"])
+bron_taal = st.selectbox("Welke taal spreekt de pastoor?", ["fr", "pt", "nl", "zh-CN", "en-US", "es", "de"])
 doel_taal = st.selectbox("Welke taal wil je horen?", ["nl", "fr", "pt", "zh-CN", "ln", "en-US", "es", "de"])
 
 st.markdown("🎙️ Klik hieronder om live te spreken:")
