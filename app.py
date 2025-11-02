@@ -8,7 +8,7 @@ import av
 import whisper
 
 # 🌍 Taalinstellingen
-bron_taal = st.selectbox("Welke taal spreekt de pastoor?", ["fr", "pt", "nl", "zh", "ln", "en", "es", "de"])
+bron_taal = st.selectbox("Welke taal spreekt de pastoor?", ["fr", "pt", "nl", "zh", "en", "es", "de"])
 doel_taal = st.selectbox("Welke taal wil je horen?", ["nl", "fr", "pt", "zh", "ln", "en", "es", "de"])
 
 # 🎧 Tekst uitspreken
