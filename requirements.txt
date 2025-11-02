@@ -3,3 +3,5 @@ streamlit-webrtc==0.45.0
 deep-translator==1.11.4
 edge-tts==7.2.3
 openai-whisper==1.1.10
+soundfile==0.12.1
+numpy==1.26.2
