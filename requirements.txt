@@ -1,4 +1,8 @@
 streamlit==1.51.0
 streamlit-webrtc==0.45.0
 av==11.0.0
+deep-translator==1.11.4
+edge-tts==7.2.3
+whisper==1.1.10
+torch==2.1.2
 
