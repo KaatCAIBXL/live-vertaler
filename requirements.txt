@@ -1,4 +1,6 @@
-streamlit==1.25.0
-streamlit-webrtc==0.45.0
-deep-translator==1.11.4
-edge-tts==7.2.3
+streamlit
+streamlit-mic-recorder
+deep-translator
+edge-tts
+# speechrecognition # Optioneel, als u het werkend krijgt met bytes conversie
+# pydub # Mogelijk nodig voor audio conversie
